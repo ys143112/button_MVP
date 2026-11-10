@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import {act,blocked,controls,create,incidents,tick,type Action,type State} from './engine';
 import {Cockpit} from './scene';
+import '@fontsource-variable/noto-sans-kr';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
 import './style.css';
 const $=<T extends HTMLElement=HTMLElement>(q:string)=>document.querySelector<T>(q)!;
 const safeRead=(key:string,fallback:string)=>{try{return localStorage.getItem(key)??fallback;}catch{return fallback;}};

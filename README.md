@@ -44,7 +44,7 @@ npm run test:e2e
 - `tests/balance.ts`: 100개 시드 × 두 관리 전략. 자동 승률은 인간의 재미나 난도를 입증하지 않습니다.
 - `tests/browser.spec.ts`: PC / 터치 화면의 실패·승리·정지·재시작·저장·콘솔 오류·화면 캡처
 
-모든 게임 아트는 코드로 직접 그렸고 소리는 Web Audio로 합성했습니다. Google Fonts의 Noto Sans KR와 IBM Plex Mono를 사용하며 오프라인에서는 시스템 글꼴로 대체됩니다. 유료 에셋과 서버는 없습니다. 효과 줄이기 설정은 깜빡임·버튼 애니메이션·별 이동을 줄입니다.
+모든 게임 아트는 코드로 직접 그렸고 소리는 Web Audio로 합성했습니다. SIL Open Font License의 Noto Sans KR와 IBM Plex Mono를 Fontsource 패키지로 함께 제공합니다. 실행 중 외부 글꼴 요청이 없습니다. 유료 에셋과 서버는 없습니다. 효과 줄이기 설정은 깜빡임·버튼 애니메이션·별 이동을 줄입니다.
 
 ## 배포
 
@@ -52,4 +52,4 @@ npm run test:e2e
 
 ## 알려진 한계
 
-실제 iOS / Android 기기, Safari와 Firefox의 검증은 포함하지 않습니다. 터치 검사는 Chromium 모바일 에뮬레이션입니다. 외부 글꼴 로딩이 차단되면 글꼴이 달라집니다. Phaser 의존성 때문에 초기 JS가 약 1.2MB(압축 전)입니다. 게임 진행에는 외부 API가 필요하지 않습니다.
+실제 iOS / Android 기기, Safari와 Firefox의 검증은 포함하지 않습니다. 터치 검사는 Chromium 모바일 에뮬레이션입니다. Phaser 의존성 때문에 초기 JS가 약 1.2MB(압축 전)입니다. 게임 진행에는 외부 API가 필요하지 않습니다.
