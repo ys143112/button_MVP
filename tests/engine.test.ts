@@ -1,0 +1,16 @@
+import {describe,it,expect} from 'vitest';
+import {act,blocked,controls,create,incidents,queue,tick,type Action} from '../src/engine';
+import {pilot,run} from './balance';
+const advance=(s:ReturnType<typeof create>,n:number)=>{for(let i=0;i<n*10;i++)tick(s,.1);};
+describe('ship systems',()=>{
+ it('starts fairly and idling loses for an explicit reason',()=>{const s=create(1);advance(s,10);expect(s.status).toBe('playing');const end=run(1,()=>{});expect(end.status).toBe('lost');expect(end.reason).toBeTruthy();expect(end.time).toBeGreaterThan(25);});
+ it('all six devices have their advertised benefits, side effects and cooldowns',()=>{for(const a of Object.keys(controls) as Action[]){const s=create(2);s.time=50;s.o=50;s.heat=55;s.p=50;s.hull=50;expect(act(s,a)).toBe(true);expect(act(s,a)).toBe(false);expect(s.actions).toBe(1);if(a==='oxygen'){expect(s.o).toBe(74);expect(s.heat).toBe(65);expect(s.p).toBe(45);}if(a==='cool'){expect(s.heat).toBe(29);expect(s.p).toBe(34);}if(a==='generate'){expect(s.p).toBe(77);expect(s.o).toBe(38);}if(a==='repair'){expect(s.hull).toBe(74);expect(blocked(s,'cool')).toContain('잠금');}if(a==='vent'){expect(s.heat).toBe(39);expect(s.o).toBe(35);}if(a==='reroute'){expect(s.p).toBe(60);expect(s.heat).toBe(64);}}});
+ it('eight distinct incidents are telegraphed, applied and repairable',()=>{for(const id of Object.keys(incidents) as (keyof typeof incidents)[]){const s=create(2);s.time=50;s.nextEvent=999;queue(s,id);expect(s.active[id]).toBeUndefined();advance(s,5.1);expect(s.active[id]).toBeDefined();expect(act(s,incidents[id].fix)).toBe(true);expect(s.active[id]).toBeUndefined();}});
+ it('allows prevention and never duplicates pending incidents',()=>{const s=create();queue(s,'leak');queue(s,'leak');expect(s.pending).toHaveLength(1);act(s,'repair');expect(s.pending).toHaveLength(0);});
+ it('action repetition causes a traceable chain',()=>{const s=create(3);s.time=50;for(let i=0;i<3;i++){s.cooldowns.generate=0;act(s,'generate');}expect(s.pending.some(e=>e.id==='surge')).toBe(true);expect(s.pending.some(e=>e.at>s.time)).toBe(true);});
+ it('provides a three second fatal recovery window',()=>{const s=create();s.o=0;advance(s,2);expect(s.status).toBe('playing');act(s,'oxygen');advance(s,.2);expect(s.danger).toBe(0);});
+ it('zero power blocks consumers without causing an instant death',()=>{const s=create();s.p=0;expect(act(s,'cool')).toBe(false);expect(act(s,'generate')).toBe(true);});
+ it('has deterministic random outcomes and bound resources',()=>{expect(run(50,pilot)).toEqual(run(50,pilot));const s=run(55,pilot);for(const k of ['o','p','hull'] as const){expect(s[k]).toBeGreaterThanOrEqual(0);expect(s[k]).toBeLessThanOrEqual(100);}});
+ it('two adaptive strategies can win across seeds; idle and single-button play cannot',()=>{for(const style of [0,1]){const games=Array.from({length:30},(_,i)=>run(i,s=>pilot(s,style)));expect(games.filter(s=>s.status==='won').length).toBeGreaterThan(20);}for(const a of Object.keys(controls) as Action[])expect(run(7,s=>act(s,a)).status).toBe('lost');});
+ it('stops mutation after victory or loss',()=>{const s=run(1,pilot);expect(s.status).toBe('won');const copy=structuredClone(s);tick(s,.1);expect(act(s,'generate')).toBe(false);expect(s).toEqual(copy);});
+});
