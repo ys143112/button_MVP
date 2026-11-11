@@ -9,7 +9,10 @@ test('adaptive operator reaches the destination using visible controls',async({p
   const snapshot=await page.evaluate(()=>({o:Number(document.querySelector('#v-o')!.textContent),heat:Number(document.querySelector('#v-heat')!.textContent),p:Number(document.querySelector('#v-p')!.textContent),hull:Number(document.querySelector('#v-hull')!.textContent),fixes:[...document.querySelectorAll('.incident>span')].map(e=>e.textContent!.replace('해결 → ','')),enabled:[...document.querySelectorAll<HTMLButtonElement>('[data-action]')].filter(b=>!b.disabled).map(b=>b.dataset.action!)}));
   const names:Record<string,string>={'산소 주입':'oxygen','급속 냉각':'cool','비상 발전':'generate','선체 용접':'repair','비상 환기':'vent','회로 우회':'reroute'};
   const candidates=[...(snapshot.o<30?['oxygen']:snapshot.heat>77?['cool']:snapshot.hull<32?['repair']:[]),...snapshot.fixes.map(n=>names[n]).filter(a=>!(a==='vent'&&snapshot.o<32)&&!(a==='cool'&&snapshot.p<27)&&!(a==='repair'&&snapshot.p<22)),...(snapshot.o<57?['oxygen']:[]),...(snapshot.heat>58?['cool']:[]),...(snapshot.p<43?['generate']:[]),...(snapshot.hull<67?['repair']:[])];
-  const a=candidates.find(a=>snapshot.enabled.includes(a));if(a)await page.locator(`[data-action="${a}"]`).click();await page.clock.runFor(500);
+  const a=candidates.find(a=>snapshot.enabled.includes(a));if(a){try{await page.locator(`[data-action="${a}"]`).click({timeout:1500});}catch(error){
+   // The flight can finish between reading the controls and clicking one.
+   if(!await page.getByRole('dialog').isVisible())throw error;
+  }}await page.clock.runFor(500);
  }
  await expect(page.getByRole('dialog')).toContainText('배송 완료');await page.screenshot({path:`test-results/${info.project.name}-victory.png`,fullPage:true});await page.reload();await expect(page.getByRole('dialog')).toContainText('무사 도착 1회');
 });
