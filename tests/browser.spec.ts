@@ -13,3 +13,16 @@ test('adaptive operator reaches the destination using visible controls',async({p
  }
  await expect(page.getByRole('dialog')).toContainText('배송 완료');await page.screenshot({path:`test-results/${info.project.name}-victory.png`,fullPage:true});await page.reload();await expect(page.getByRole('dialog')).toContainText('무사 도착 1회');
 });
+
+test('mystery controls react visually without revealing resource formulas',async({page},info)=>{
+ await page.clock.install();await page.goto('./');await page.getByRole('button',{name:'근무 시작'}).click();
+ await expect(page.getByRole('dialog')).toContainText('설명서는 분실');await page.getByRole('button',{name:'알겠습니다. 아마도.'}).click();
+ await expect(page.locator('.controls')).not.toContainText(/산소 \+|열 [−+] |전력 [−+]|선체 \+/);
+ const before=await page.locator('#v-o').textContent();await page.locator('[data-action="oxygen"]').click();await page.clock.runFor(120);
+ await expect(page.locator('#v-o')).not.toHaveText(before!);await expect(page.locator('#g-o')).toHaveClass(/reacting/);await expect(page.locator('[data-action="oxygen"]')).toHaveClass(/pressed/);
+ await expect(page.locator('#logs')).not.toContainText('+24');await expect(page.locator('#ai-line')).toContainText('산소 주입 접수');
+ await page.screenshot({path:`test-results/${info.project.name}-interaction.png`,fullPage:true});
+ await page.clock.runFor(1700);await expect(page.locator('[data-action="oxygen"]')).not.toHaveClass(/pressed/);
+ await page.locator('#motion').click();await expect(page.locator('body')).toHaveClass(/reduced/);await page.locator('[data-action="generate"]').click();
+ expect(await page.locator('.generate').evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
+});
