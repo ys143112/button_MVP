@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {act,blocked,controls,create,incidents,tick,type Action,type State} from './engine';
 import {Cockpit} from './scene';
+import {readFlightRecords,saveFlightResult} from './records';
 import {deviceLabels,dispatch,instrumentMarkup,pulse} from './feedback';
 import '@fontsource-variable/noto-sans-kr';
 import '@fontsource/ibm-plex-mono/400.css';
@@ -11,7 +12,8 @@ const $=<T extends HTMLElement=HTMLElement>(q:string)=>document.querySelector<T>
 const safeRead=(key:string,fallback:string)=>{try{return localStorage.getItem(key)??fallback;}catch{return fallback;}};
 const save=(key:string,value:string)=>{try{localStorage.setItem(key,value);}catch{/* Private browsing may disable persistence. */}};
 let sound=safeRead('normal-sound','true')==='true',reduced=safeRead('normal-reduced',String(matchMedia('(prefers-reduced-motion: reduce)').matches))==='true';
-let best=Number(safeRead('normal-best','0')),wins=Number(safeRead('normal-wins','0'));let state=create();let mode:'title'|'tutorial'|'playing'|'paused'|'result'='title';let audio:AudioContext|undefined;let lastAlert=0;let logged=-1;
+const recordStorage={getItem:(key:string)=>localStorage.getItem(key),setItem:(key:string,value:string)=>localStorage.setItem(key,value)};
+let {best,wins}=readFlightRecords(recordStorage);let state=create();let mode:'title'|'tutorial'|'playing'|'paused'|'result'='title';let audio:AudioContext|undefined;let lastAlert=0;let logged=-1;
 const scene=new Cockpit();
 $('#app').innerHTML=`<main class="bridge"><header><a class="brand" href="#" aria-label="정상 운행 중입니다 홈"><span class="brand-mark">✳</span> ORBITAL POST <small>우주 우편 운송국</small></a><div class="header-right"><span class="live-dot"></span><span>야간 항해 013</span><button id="sound" class="small">소리 켜짐</button><button id="motion" class="small">효과 줄이기</button><button id="pause" class="small">Ⅱ 일시정지</button></div></header>
 <section class="viewport"><div id="space"></div><div class="window-label">EXTERIOR CAM / 03 <span>LIVE</span></div><div class="destination"><span>목적지</span><strong>케플러 우편 기지</strong><small>마지막 배달입니다. 아마도.</small></div><div class="route"><span>출발지</span><i></i><b id="route-ship">◆</b><i></i><span>KEPLER–62</span></div><div class="window-bottom"><span>선박명 <b>무사귀환호</b> / CARGO-013</span><span>선체 보험 : 만료됨</span></div></section>
@@ -56,4 +58,4 @@ function render(){scene.state=state;const left=Math.ceil(120-state.time);$('#tim
  if(logged!==state.logs.length+state.actions+state.logs[0].at){logged=state.logs.length+state.actions+state.logs[0].at;$('#logs').innerHTML=state.logs.slice(0,4).map(l=>`<div class="log ${l.kind}"><time>${String(Math.floor(l.at)).padStart(3,'0')}s</time><span>${displayLog(l.text,l.kind)}</span></div>`).join('');$('#ai-line').textContent=displayLog(state.logs[0].text,state.logs[0].kind);}
  $('#tip').textContent=state.danger>0?`긴급 / ${Math.max(0,3-state.danger).toFixed(1)}초 안에 복구하세요!`:state.lock>state.time?'용접 진행 중 / 일부 장치가 잠겼습니다. 다른 방법을 찾아보세요.':state.p<16?'전력 부족 / 불이 꺼지기 전에 방법을 찾아보세요.':state.time<24?'MANUAL / 설명서는 분실됐습니다. 계기판을 믿으세요.':'TIP / 예고 중인 사고도 해결 장치로 미리 막을 수 있습니다.';
 }
-let prev=performance.now(),paint=0;function frame(now:number){const dt=Math.min((now-prev)/1000,.1);prev=now;if(mode==='playing'){tick(state,dt);paint+=dt;if(paint>.08){render();paint=0;}if((state.o<25||state.heat>78||state.hull<25)&&now-lastAlert>4500){beep('alarm');lastAlert=now;}if(state.status!=='playing'){mode='result';if(state.score>best){best=state.score;save('normal-best',String(best));}if(state.status==='won'){wins++;save('normal-wins',String(wins));beep('win');}else beep('alarm');render();overlay();}}requestAnimationFrame(frame);}settings();render();overlay();requestAnimationFrame(frame);
+let prev=performance.now(),paint=0;function frame(now:number){const dt=Math.min((now-prev)/1000,.1);prev=now;if(mode==='playing'){tick(state,dt);paint+=dt;if(paint>.08){render();paint=0;}if((state.o<25||state.heat>78||state.hull<25)&&now-lastAlert>4500){beep('alarm');lastAlert=now;}if(state.status!=='playing'){mode='result';({best,wins}=saveFlightResult(recordStorage,{best,wins},state.score,state.status==='won'));if(state.status==='won'){beep('win');}else beep('alarm');render();overlay();}}requestAnimationFrame(frame);}settings();render();overlay();requestAnimationFrame(frame);
